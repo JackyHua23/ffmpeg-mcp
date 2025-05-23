@@ -146,7 +146,7 @@ def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, to
     return cut_video.extract_frames_from_video(video_path, fps, output_folder, format, total_frames)
 
 @mcp.tool()
-def extract_audio_from_video(video_path, output_path=None, audio_format="mp3", time_out=300):
+def extract_audio_from_video(video_path, output_path=None, audio_format=None, time_out=300):
     """
     提取视频中的音轨
     参数：

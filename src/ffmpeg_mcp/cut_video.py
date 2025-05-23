@@ -313,14 +313,14 @@ def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, to
         print(f"抽取失败: {str(e)}")
         return {-1, str(e), ""}
 
-def extract_audio_from_video(video_path, output_path=None, audio_format="mp3", time_out=300):
+def extract_audio_from_video(video_path, output_path=None, audio_format=None, time_out=300):
     """
     提取视频中的音轨
 
     参数：
     video_path(str) - 输入视频文件路径
     output_path(str) - 输出音频文件路径（可选，默认与视频同名）
-    audio_format(str) - 输出音频格式（可选，默认mp3）
+    audio_format(str) - 输出音频格式（可选，默认aac）
     time_out(int) - 命令行超时时间，默认300秒
 
     返回：
@@ -330,12 +330,15 @@ def extract_audio_from_video(video_path, output_path=None, audio_format="mp3", t
     """
     if not os.path.exists(video_path):
         return -1, "视频文件不存在", ""
+    if audio_format is None:
+        audio_format = "aac"
     if output_path is None:
         base, _ = os.path.splitext(video_path)
         output_path = f"{base}.{audio_format}"
+    # 默认直接拷贝音频流（适用于aac等无需转码的格式）
     cmd = f'-i "{video_path}" -vn -acodec copy -y "{output_path}"'
-    # 如果用户指定了格式且不是原始音频流，改用转码
-    if audio_format.lower() != "aac" and not output_path.endswith(".aac"):
+    # 如果用户指定的格式不是aac，则转码为指定格式
+    if audio_format.lower() != "aac":
         cmd = f'-i "{video_path}" -vn -q:a 0 -map a -y "{output_path}"'
     code, log = ffmpeg.run_ffmpeg(cmd, timeout=time_out)
     if code == 0:
