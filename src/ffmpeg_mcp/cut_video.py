@@ -4,6 +4,45 @@ import os
 from typing import List
 from enum import Enum
 
+def get_outputs_dir():
+    """
+    获取项目的outputs目录路径，如果不存在则创建
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 向上查找到项目根目录（包含outputs文件夹的目录）
+    project_root = current_dir
+    while project_root != os.path.dirname(project_root):
+        outputs_dir = os.path.join(project_root, "outputs")
+        if os.path.exists(outputs_dir):
+            return outputs_dir
+        project_root = os.path.dirname(project_root)
+    
+    # 如果找不到outputs目录，在当前目录创建一个
+    outputs_dir = os.path.join(current_dir, "outputs")
+    os.makedirs(outputs_dir, exist_ok=True)
+    return outputs_dir
+
+def get_default_output_path(input_path, suffix="", extension=None):
+    """
+    生成默认的输出文件路径，保存到outputs目录
+    
+    参数：
+    input_path: 输入文件路径
+    suffix: 文件名后缀（如_clip, _scaled等）
+    extension: 输出文件扩展名，如果为None则使用输入文件的扩展名
+    """
+    filename = os.path.basename(input_path)
+    base_name, original_ext = os.path.splitext(filename)
+    
+    if extension is None:
+        extension = original_ext
+    elif not extension.startswith('.'):
+        extension = '.' + extension
+    
+    outputs_dir = get_outputs_dir()
+    output_filename = f"{base_name}{suffix}{extension}"
+    return os.path.join(outputs_dir, output_filename)
+
 def clip_video_ffmpeg(video_path, start = None, end = None, duration=None, output_path = None, time_out = 30):
     """
     智能视频剪辑函数
@@ -23,9 +62,8 @@ def clip_video_ffmpeg(video_path, start = None, end = None, duration=None, outpu
     clip_video("input.mp4", "00:01:30", "02:30")
     """
     try:
-        base, ext = os.path.splitext(video_path)
-        if (output_path == None):
-            output_path = f"{base}_clip{ext}"
+        if output_path is None:
+            output_path = get_default_output_path(video_path, "_clip")
         cmd = f"-i {video_path} "
         if (start != None):
             start_sec = utils.convert_to_seconds(start)
@@ -65,9 +103,8 @@ def concat_videos(input_files: List[str], output_path: str = None,
     2. 推荐视频文件使用相同编码参数，避免拼接失败
     3. 输出文件格式由output_path后缀决定（如.mp4/.mkv）
     """
-    if (output_path is None):
-        base, ext = os.path.splitext(input_files[0])
-        output_path = f"{base}_clip.mp4"
+    if output_path is None:
+        output_path = get_default_output_path(input_files[0], "_concat", ".mp4")
     # 检查输入文件是否存在
     for file in input_files:
         if not os.path.exists(file):
@@ -201,11 +238,8 @@ def overlay_video(background_video, overlay_video, output_path: str = None, posi
     dy(int) - 整形,前景视频坐标y值
     """
     try:
-        base, ext = os.path.splitext(background_video)
-        if (output_path == None):
-            if (ext == None or len(ext) == 0):
-                ext = ".mp4"
-            output_path = f"{base}_clip{ext}"
+        if output_path is None:
+            output_path = get_default_output_path(background_video, "_overlay")
         x = ""
         y = ""
         if position == 1:
@@ -257,11 +291,8 @@ def scale_video(video_path, width, height = -2,output_path: str = None):
     output_path(str) - 输出路径
     """
     try:
-        base, ext = os.path.splitext(video_path)
-        if (output_path == None):
-            if (ext == None or len(ext) == 0):
-                ext = ".mp4"
-            output_path = f"{base}_clip{ext}"
+        if output_path is None:
+            output_path = get_default_output_path(video_path, "_scaled")
     
         cmd = f" -i {video_path} -filter_complex \"scale={width}:{height}\""
         cmd = f"{cmd} -y {output_path}"
@@ -284,8 +315,8 @@ def extract_frames_from_video(video_path,fps=0, output_folder=None, format=0, to
     :param format: 输出图像的图片格式 0：png 1:jpg 2:webp。
     """
     # 确保输出文件夹存在
-    if output_folder == None:
-          output_folder = os.path.dirname(video_path)
+    if output_folder is None:
+        output_folder = get_outputs_dir()
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     img_ext = "png"
@@ -319,7 +350,7 @@ def extract_audio_from_video(video_path, output_path=None, audio_format=None, ti
 
     参数：
     video_path(str) - 输入视频文件路径
-    output_path(str) - 输出音频文件路径（可选，默认与视频同名）
+    output_path(str) - 输出音频文件路径（可选，默认保存到outputs目录）
     audio_format(str) - 输出音频格式（可选，默认aac）
     time_out(int) - 命令行超时时间，默认300秒
 
@@ -333,8 +364,7 @@ def extract_audio_from_video(video_path, output_path=None, audio_format=None, ti
     if audio_format is None:
         audio_format = "aac"
     if output_path is None:
-        base, _ = os.path.splitext(video_path)
-        output_path = f"{base}.{audio_format}"
+        output_path = get_default_output_path(video_path, "", f".{audio_format}")
     # 默认直接拷贝音频流（适用于aac等无需转码的格式）
     cmd = f'-i "{video_path}" -vn -acodec copy -y "{output_path}"'
     # 如果用户指定的格式不是aac，则转码为指定格式
