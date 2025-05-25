@@ -70,7 +70,7 @@ def concat_videos(input_files: List[str], output_path: str = None,
     fast (bool): 拼接方法，可选值："True"（默认，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数）| "False(当不确定合并的视频编码格式、分辨率、帧率等参数是否相同的情况下，这个参数应该是False)"
     
     返回:
-    执行日志
+    code, log, output_path
     
     注意:
     1. 当fast=True时，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数

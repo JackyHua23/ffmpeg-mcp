@@ -96,7 +96,7 @@ def concat_videos(input_files: List[str], output_path: str = None,
     fast (bool): 拼接方法，可选值："True"（默认，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数）| "False(当不确定合并的视频编码格式、分辨率、帧率等参数是否相同的情况下，这个参数应该是False)"
     
     返回:
-    None
+    code, log, output_path
     
     注意:
     1. 当fast=True时，要求所有视频必须具有相同的编码格式、分辨率、帧率等参数
@@ -123,7 +123,8 @@ def concat_videos(input_files: List[str], output_path: str = None,
             
             # 构建FFmpeg命令
             cmd = f"-f concat -safe 0 -i {temp_list_file} -c copy -y {output_path}"
-            return ffmpeg.run_ffmpeg(cmd)
+            code, log = ffmpeg.run_ffmpeg(cmd)
+            return code, log, output_path
         finally:
             # 清理临时文件
             if os.path.exists(temp_list_file):
@@ -134,7 +135,7 @@ def concat_videos(input_files: List[str], output_path: str = None,
         filter_str = ""
         fmt_ctx = ffmpeg.media_format_ctx(input_files[0])
         if fmt_ctx is None:
-            return -1, f"{input_files[0]} 视频解析失败！！"
+            return -1, f"{input_files[0]} 视频解析失败！！", output_path
         map = ""
         if len(fmt_ctx.video_streams) > 0: ## 视频+音频
             width = fmt_ctx.video_streams[0].width
@@ -147,9 +148,9 @@ def concat_videos(input_files: List[str], output_path: str = None,
                 if i > 0:
                     tmp_fmt_ctx = ffmpeg.media_format_ctx(file)
                     if (tmp_fmt_ctx is None):
-                        return -1, f"{input_files[i]} 视频解析失败！！"
+                        return -1, f"{input_files[i]} 视频解析失败！！", output_path
                     if len(tmp_fmt_ctx.video_streams) == 0:
-                        return -1, f"{input_files[i]} 不包含视频流！！"
+                        return -1, f"{input_files[i]} 不包含视频流！！", output_path
                     tmp_width = tmp_fmt_ctx.video_streams[0].width
                     tmp_height = tmp_fmt_ctx.video_streams[0].height
                     tmp_aspect = float(tmp_width)/float(tmp_height) 
@@ -182,11 +183,12 @@ def concat_videos(input_files: List[str], output_path: str = None,
             map = " -map '[outa]' "
             
         if len(filter_str) == 0:
-            return -1, f"{input_files[0]} 视频中不包含任何音视频流！！"
+            return -1, f"{input_files[0]} 视频中不包含任何音视频流！！", output_path
         # 构建输入参数和滤镜表达式
         inputs_str = " ".join(inputs)
         cmd = f" {inputs_str} -lavfi '{filter_str}' {map} -y {output_path}"
-        return ffmpeg.run_ffmpeg(cmd)
+        code, log = ffmpeg.run_ffmpeg(cmd)
+        return code, log, output_path
     
 
 def get_video_info(video_path: str):
