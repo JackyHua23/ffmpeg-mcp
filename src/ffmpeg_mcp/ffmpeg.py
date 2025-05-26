@@ -108,6 +108,35 @@ def command_dir():
             cmd = f"chmod 777 {dir}/ffplay"
             code,_,_= run_command(cmd)
         return dir
+    if system == "Linux":
+        if machine == "x86_64":
+            dir = f"{current_work_dir}/bin/ffmpeg-linux-x86_64"
+            url = "https://gitee.com/littlecodergitxxx/ffmpeg-linux-x86_64.git"
+        if machine == "arm64":
+            dir = f"{current_work_dir}/bin/ffmpeg-linux-arm64"
+            url = "https://gitee.com/littlecodergitxxx/ffmpeg-linux-arm64.git"
+        if not is_file_and_exists(f"{dir}/ffmpeg"):
+            cmd = f"rm -rf {dir}"
+            code,_,_ = run_command(cmd)
+            cmd = f"git clone {url}"
+            code,_,_ = run_command(cmd)
+            if code == 0:
+                os.chdir(dir)
+            else:
+                return None
+            cmd = f"git checkout v0.1"
+            code,_,_= run_command(cmd)
+            if code == 0:
+                utils.unzip_to_current_directory(f"ffmpeg.zip")
+            else:
+                return None
+            cmd = f"chmod 777 {dir}/ffmpeg"
+            code,_,_= run_command(cmd)
+            cmd = f"chmod 777 {dir}/ffprobe"
+            code,_,_= run_command(cmd)
+            cmd = f"chmod 777 {dir}/ffplay"
+            code,_,_= run_command(cmd)
+        return dir
     return None
 
 def run_ffmpeg(cmd, timeout=300):
